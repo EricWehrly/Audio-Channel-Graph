@@ -5,7 +5,7 @@ import sys
 import os.path
 import time
 
-def analyze_audio(input_file, output_file, channel=0):
+def analyze_audio(input_file, output_file, channel):
     start_time = time.time()
 
     try:
@@ -56,12 +56,12 @@ def analyze_audio(input_file, output_file, channel=0):
         print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3 or len(sys.argv) > 4:
-        print("Usage: python analyze_audio.py <input_file> <output_file> [<channel>]")
+    if len(sys.argv) < 2:
+        print("Usage: python analyze_audio.py <input_file> [<output_file> [<channel>]]")
         sys.exit(1)
 
     input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    channel = int(sys.argv[3]) if len(sys.argv) >= 4 else 0
+    output_file = sys.argv[2] if len(sys.argv) >= 3 else "/host/output.jpg"
+    channel = int(sys.argv[3]) if len(sys.argv) == 4 else 0
 
     analyze_audio(input_file, output_file, channel)
