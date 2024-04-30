@@ -28,10 +28,8 @@ def analyze_audio(input_file, output_file, channel):
         # Extract audio samples and calculate volume
         samples = []
         for frame in info['frames']:
-            if frame['media_type'] == 'audio':
-                if 'pkt_size' in frame:
-                    sample_size = int(frame['pkt_size'])
-                    samples.append(np.frombuffer(frame['coded_picture_buffer'], dtype=np.int16, count=sample_size//2))
+            if frame.get('media_type') == 'audio' and 'data' in frame:
+                samples.append(np.frombuffer(frame['data'], dtype=np.int16))
 
         # Check if any audio samples were extracted
         if not samples:
