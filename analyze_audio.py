@@ -39,8 +39,8 @@ def analyze_audio(input_file, output_file):
         for channel in range(channel_count):
             for frame in ffmpeg.probe(input_file, select_streams=f'a:{stream_index}', show_frames=None)['frames']:
                 if 'media_type' in frame and frame['media_type'] == 'audio':
-                    if 'pkt_pts_time' in frame:
-                        timestamp = float(frame['pkt_pts_time'])
+                    if 'pts_time' in frame:
+                        timestamp = float(frame['pts_time'])
                         volume = np.mean(np.abs(frame['channels'][channel]['data']))
                         data[f"Channel {channel}"].append((timestamp, volume))
                     else:
