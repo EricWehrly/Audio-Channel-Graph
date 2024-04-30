@@ -50,8 +50,9 @@ def analyze_audio(input_file, output_file):
 
     # Plot and save chart for each channel
     for channel, channel_data in data.items():
-        timestamps, volumes = zip(*channel_data)
-        plt.plot(timestamps, volumes, label=channel)
+        if channel_data:
+            timestamps, volumes = zip(*channel_data)
+            plt.plot(timestamps, volumes, label=channel)
 
     # Add labels and legend
     plt.xlabel('Time (seconds)')
