@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import sys
 import os.path
 import time
+import json  # Add import statement for the json module
 
 def analyze_audio(input_file, output_file, channel):
     start_time = time.time()
