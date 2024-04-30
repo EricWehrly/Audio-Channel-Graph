@@ -5,13 +5,14 @@ import sys
 import os.path
 import time
 
-def analyze_audio(input_file, output_file, channel):
+def analyze_audio(input_file, output_file, channel=0):
     start_time = time.time()
 
     try:
         # Log input and output file paths
         print(f"Input file: {input_file}")
         print(f"Output file: {output_file}")
+        print(f"Channel: {channel}")
 
         # Check if input file exists
         if not os.path.exists(input_file):
@@ -44,7 +45,7 @@ def analyze_audio(input_file, output_file, channel):
         plt.xlabel('Sample')
         plt.ylabel('Volume')
         plt.savefig(output_file)
-    
+
     except Exception as e:
         print(f"Error: An exception occurred: {e}")
         sys.exit(1)
@@ -55,12 +56,12 @@ def analyze_audio(input_file, output_file, channel):
         print(f"Elapsed time: {elapsed_time:.2f} seconds")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python analyze_audio.py <input_file> <output_file> <channel>")
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
+        print("Usage: python analyze_audio.py <input_file> <output_file> [<channel>]")
         sys.exit(1)
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    channel = int(sys.argv[3])
+    channel = int(sys.argv[3]) if len(sys.argv) >= 4 else 0
 
     analyze_audio(input_file, output_file, channel)
