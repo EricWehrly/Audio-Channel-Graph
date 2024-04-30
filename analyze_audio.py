@@ -1,19 +1,10 @@
-import sys
-import os.path
-import ffmpeg
+import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
-
-# Define the keys to exclude
-EXCLUDED_KEYS = ['media_type', 'key_frame', 'pkt_pts', 'pkt_pts_time', 'pkt_dts', 'pkt_dts_time', 
-                 'best_effort_timestamp', 'best_effort_timestamp_time', 'pkt_duration', 'pkt_duration_time', 
-                 'pkt_pos', 'pkt_size']
-
-unexpected_keys = set()
+import sys
+import os.path
 
 def analyze_audio(input_file, output_file):
-    global unexpected_keys
-
     # Log input and output file paths
     print(f"Input file: {input_file}")
     print(f"Output file: {output_file}")
@@ -23,57 +14,45 @@ def analyze_audio(input_file, output_file):
         print(f"Error: Input file '{input_file}' does not exist.")
         sys.exit(1)
 
-    # Open the input file
-    probe = ffmpeg.probe(input_file)
+    # Run ffprobe to get information about the input file
+    ffprobe_cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_frames', input_file]
+    ffprobe_output = subprocess.check_output(ffprobe_cmd, stderr=subprocess.STDOUT)
+    info = json.loads(ffprobe_output)
 
-    # Find audio streams
-    audio_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'audio']
+    # Find the first audio stream
+    audio_stream = next((stream for stream in info['streams'] if stream['codec_type'] == 'audio'), None)
+    if audio_stream is None:
+        print("Error: No audio streams found in the input file.")
+        sys.exit(1)
 
-    # Initialize data dictionary to store volume data for each channel
-    data = {f"Channel {i}": [] for i in range(len(audio_streams))}
+    # Extract audio samples and calculate volume
+    samples = []
+    for frame in info['frames']:
+        if frame['media_type'] == 'audio':
+            if 'pkt_size' in frame:
+                sample_size = int(frame['pkt_size'])
+                samples.append(np.frombuffer(frame['coded_picture_buffer'], dtype=np.int16, count=sample_size//2))
 
-    # Extract audio volume for each channel
-    for stream in audio_streams:
-        stream_index = stream['index']
-        channel_count = int(stream['channels'])
-        for channel in range(channel_count):
-            for frame in ffmpeg.probe(input_file, select_streams=f'a:{stream_index}', show_frames=None)['frames']:
-                if 'media_type' in frame and frame['media_type'] == 'audio':
-                    if 'pts_time' in frame:
-                        timestamp = float(frame['pts_time'])
-                        volume = np.mean(np.abs(frame['channels'][channel]['data']))
-                        data[f"Channel {channel}"].append((timestamp, volume))
-                    else:
-                        for key in frame.keys():
-                            if key not in EXCLUDED_KEYS:
-                                unexpected_keys.add(key)
+    # Check if any audio samples were extracted
+    if not samples:
+        print("Error: No audio samples found in the input file.")
+        sys.exit(1)
 
-    # Plot and save chart for each channel
-    for channel, channel_data in data.items():
-        if channel_data:
-            timestamps, volumes = zip(*channel_data)
-            plt.plot(timestamps, volumes, label=channel)
+    # Calculate volume for each sample
+    volumes = [np.mean(np.abs(sample)) for sample in samples]
 
-    # Add labels and legend
-    plt.xlabel('Time (seconds)')
+    # Plot and save chart
+    plt.plot(volumes)
+    plt.xlabel('Sample')
     plt.ylabel('Volume')
-    plt.legend()
-
-    # Save the plot as a JPEG file
     plt.savefig(output_file)
-
-    # Check if there are unexpected keys
-    if unexpected_keys:
-        print("Warning: Unable to get timestamp. The following unexpected keys were found in the frame data:")
-        for key in unexpected_keys:
-            print(key)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python analyze_audio.py <input_file> <output_file>")
         sys.exit(1)
-    
+
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    
+
     analyze_audio(input_file, output_file)
